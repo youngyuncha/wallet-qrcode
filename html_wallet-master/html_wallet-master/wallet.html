@@ -1,0 +1,188 @@
+<!Doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script type="text/javascript" src="./js/coinstack-1.1.19.min.js"></script>
+<script src="http://code.jquery.com/jquery-latest.js "></script>
+<script type="text/javascript" src="./js/qrcode.js"></script>
+
+<!-- bootsrtap CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+
+<title>BitCoin wallet</title>
+
+<script>
+$(document).ready(function(){
+
+  // test address
+  // var privateKey = "";
+  // var fromAddress = "";
+  // var toAddress = "1M56Jgkjap7fakmG4wfPAXUfavagZ6Vjt1";
+
+  console.log('starting...');
+  console.log('hihihihi');
+
+  var DEBUG = 1;
+
+  var client = new CoinStack('c7dbfacbdf1510889b38c01b8440b1', '10e88e9904f29c98356fd2d12b26de', 'c3sp2.blocko.io', 'https');
+
+  if (DEBUG) console.log("client: ", client);
+  
+  var qrcode = new QRCode(document.getElementById("qrcode"), { 
+  width : 200, 
+  height : 200 
+  }); 
+  
+  function makeCode () {	
+  var elText = document.getElementById("i_address"); 
+  
+  if (!elText.value) { 
+  alert("Input a text"); 
+  elText.focus(); 
+  return; 
+  } 
+   qrcode.makeCode(elText.value); 
+
+  } 
+
+
+    $('#newAccount').on('click', function(){
+       var privateKey = CoinStack.ECKey.createKey();
+         if (DEBUG)   console.log("privateKey : ", privateKey);
+
+            var address = CoinStack.ECKey.deriveAddress(privateKey);
+         if (DEBUG)   console.log("address: ", address);
+		 
+		 
+		   if (DEBUG) console.log("qrcode"); 
+               makeCode();
+			//$('#i_address').val(address);
+			//$('#i_password').val(privateKey);
+			
+    })
+	
+	
+	
+	
+	$('#checkBtn').on('click', function(){
+       // let addr = $('#i_adderss').val();
+      var addr = document.getElementById("i_address").value;
+      
+
+      client.getBalance(addr, function (err, balance) {
+	    if (!err) {
+			var total = CoinStack.Math.toBitcoin(balance);
+			$('#i_balance').val(total);
+		if (DEBUG)	console.log("address: ", addr);
+		if (DEBUG)	console.log('total: ',total);
+		alert("잔액조회가 완료되었습니다!!!");
+		}
+      });
+    })
+
+
+  $('#sendBtn').on('click', function(){
+    var prc = document.getElementById("i_price").value;
+    var toaddr = document.getElementById("toaddr").value;
+    var addr = document.getElementById("i_address").value;
+    var privateKey = document.getElementById("i_password").value;
+
+  if (DEBUG)  console.log("addr: " + addr);
+
+    var txBuilder = client.createTransactionBuilder();
+    txBuilder.addOutput(toaddr, CoinStack.Math.toSatoshi(prc));
+    txBuilder.setInput(addr);
+
+    txBuilder.buildTransaction(function (err, tx) {
+		try {
+				tx.sign(privateKey);
+                let rawTx = tx.serialize();
+                client.sendTransaction(rawTx, function (err) {
+					if (!err) {
+					if (DEBUG)	console.log("definition: ", tx.getHash());
+						alert("거래가 완료 되었습니다..!!!");
+					}
+                });
+
+            } catch (e) {
+             if (DEBUG)   console.log(e)
+            } //end of try
+    }) // end of txbuilder
+  })
+  
+  
+  
+	$('#getBtn').on('click', function(){
+     
+       client.getBlockchainStatus(function(err, status) { 
+         console.log(status); 
+         alert("성공");
+    });
+	  
+		
+	
+    })
+  
+  
+  
+  $('#QRCodeBtn').on('click', function(){
+     
+  if (DEBUG) console.log("qrcode"); 
+   makeCode();
+    });
+	  
+		
+	
+    
+  
+  })
+</script>
+</head>
+
+<body>
+  <nav class="navbar navbar-inverse navbar-fixed-top">
+   <div class="container">
+     <div class="navbar-header">
+       <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+       </button>
+       <a class="navbar-brand" href="#">CYY</a>
+     </div>
+     <div id="navbar" class="navbar-collapse collapse">
+       <ul class="nav navbar-nav">
+         <li class="active"><a href="#">BTC wallet</a></li>
+       </ul>
+     </div>
+   </div>
+ </nav>
+  <br>
+  <br>
+  <div class="container theme-showcase" role="main">
+      <div class='row'>
+      <div class='col'>
+        <h2><strong> Welcome to Web Wallet </strong></h2>
+  	  <div id="tablePlace"></div>
+	  <button id="newAccount">New Account</button>
+  	    <h5>ID  <input value="19EKxgi1JnZ35hMwjfRz6V7vtF3jnP88Qo" id="i_address" size="45" placeholder=""></input> </h5>
+        <button id="checkBtn">CheckBalance</button>
+        <h5>잔  액   <input id="i_balance" style="text-align:right;" type="number" readonly> BTC</h5>
+	    <h5>수신처  <input type="text" size="45" id="toaddr" ></h5>
+        <h5>송금액  <input id="i_price" type="number"> BTC</h5>
+	      <h5>password <input value="Kzp9uEXM1QGeKxyg6nA2sBRPZkp2rT43WVZ41Hrohs7Y3nzmVT4p" id = "i_password" size="60" type="password" placeholder="Password"></h5>
+	      <button id="sendBtn">Send</button>
+	      <button id="getBtn">Get</button>
+		  <button id="QRCodeBtn">QRCode</button>
+		  <div id="message"></div>
+		  <div id="qrcode" style="width:100px; height:100px; margin-top:15px;"></div>
+      </div>
+    </div>
+</div>
+<hr>
+</body>
+<footer class="py-5 bg-black">
+  <div class="container">
+    <p class="m-0 text-center text-white"><b>Wallet cyy 2019</b></p>
+  </div>
+</footer>
+
+</html>
